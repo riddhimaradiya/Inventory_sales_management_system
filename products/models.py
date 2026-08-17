@@ -15,6 +15,22 @@ class Product(models.Model):
     class Meta:
         ordering = ["-created_at"]
 
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(price__gte=0),
+                name="product_price_non_negative"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(gst_percentage__gte=0),
+                name="product_gst_non_negative"
+            ),
+            models.CheckConstraint(
+                condition=models.Q(gst_percentage__lte=100),
+                name="product_gst_max_100"
+            ),
+        ]
+
+
     def __str__(self):
         return f"{self.name} ({self.sku})"
 
@@ -41,6 +57,13 @@ class StockMovement(models.Model):
                 fields=["product", "created_at"]
             ),
         ]
+
+        constraints = [
+        models.CheckConstraint(
+            condition=models.Q(quantity__gt=0),
+            name="stock_movement_quantity_positive"
+        ),
+    ]
 
     def __str__(self):
         return (
