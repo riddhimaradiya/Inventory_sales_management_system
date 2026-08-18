@@ -37,14 +37,14 @@ class ProductSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Product name must contain at least 2 characters"
             )
-        raise value
+        return value
 
     def validate_gst_percentage(self, value):
         if value < 0 or value > 100:
             raise serializers.ValidationError(
                 "GST percentage must be between 0 and 100."
             )
-        raise value
+        return value
 
     def validate(self, attrs):
         price = attrs.get("price")
