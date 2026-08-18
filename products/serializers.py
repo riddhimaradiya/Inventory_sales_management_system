@@ -79,10 +79,16 @@ class StockUpdateSerializer(serializers.Serializer):
     note = serializers.CharField(required=False, allow_blank=True)
 
     def validate(self, attrs):
-        movement_type = attrs["movement_type"]
+        Movement_Type = attrs["Movement_Type"]
         quantity = attrs["quantity"]
-        if(movement_type == StockMovement.MovementType.SALE and quantity <= 0):
+        if(Movement_Type == StockMovement.MovementType.SALE and quantity <= 0):
             raise serializers.ValidationError({
                 "quantity" : "Sale quantity must be greater than zero,"
             })
         return attrs
+
+class StockMovementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = StockMovement
+        fields = ["id", "product", "Movement_Type", "quantity", "reference", "note","created_at",]
+        read_only_fields = fields

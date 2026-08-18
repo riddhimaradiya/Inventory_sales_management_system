@@ -1,14 +1,13 @@
 from rest_framework import status, generics
 from rest_framework.response import Response
-from .filters import ProductFilter
-from .serializers import ProductSerializer, StockUpdateSerializer
+from .filters import ProductFilter, StockMovementFilter
+from .serializers import ProductSerializer, StockUpdateSerializer, StockMovementSerializer
 from .services import ProductService, StockService
-from .models import Product
+from .models import Product, StockMovement
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
 from django.shortcuts import get_list_or_404
 from rest_framework.exceptions import ValidationError
-
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
@@ -76,4 +75,14 @@ class ProductStockUpdateView(generics.GenericAPIView):
             status=status.HTTP_200_OK
         )
 
+class ProductStockMovementListView(generics.ListAPIView):
+    serializer_class = StockMovementSerializer
+    filter_backends = [DjangoFilterBackend, OrderingFilter,]
+    filterset_class = StockMovementFilter
+    ordering_fields = ["created_at", "quantity", "Movement_Type",]
+    ordering = ["-created_at"]
+
+    def get_queryset(self):
+        product_id = self.kwargs["pk"]
+        return(StockMovement.objects.filter(product_id=product_id).select_related("product"))
     
