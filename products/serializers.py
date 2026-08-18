@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Product
+from .models import Product, StockMovement
 
 class ProductSerializer(serializers.ModelSerializer):
     class Meta:
@@ -63,4 +63,26 @@ class ProductSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError({
                 "threshold_quantity" : "Threshold cannot be Negative."
             }) 
+        return attrs
+
+class StockUpdateSerializer(serializers.Serializer):
+    movement_type = serializers.ChoiceField(
+        choices=[
+            StockMovement.MovementType.PURCHASE,
+            StockMovement.MovementType.RESTOCK,
+            StockMovement.MovementType.RETURN,
+            StockMovement.MovementType.SALE,
+        ]
+    )
+    quantity = serializers.IntegerField(min_value=1)
+    reference = serializers.CharField(max_length=100,required=False,allow_blank=True)
+    note = serializers.CharField(required=False, allow_blank=True)
+
+    def validate(self, attrs):
+        movement_type = attrs["movement_type"]
+        quantity = attrs["quantity"]
+        if(movement_type == StockMovement.MovementType.SALE and quantity <= 0):
+            raise serializers.ValidationError({
+                "quantity" : "Sale quantity must be greater than zero,"
+            })
         return attrs

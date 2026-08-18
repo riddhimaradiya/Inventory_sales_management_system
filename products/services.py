@@ -17,3 +17,37 @@ class ProductService:
             )
 
         return product
+
+class StockService:
+
+    INCREASE_MOVEMENTS = {
+        StockMovement.MovementType.PURCHASE,
+        StockMovement.MovementType.RESTOCK,
+        StockMovement.MovementType.RETURN,
+    }
+
+    DECREASE_MOVEMENT = {StockMovement.MovementType.SALE}
+
+    @staticmethod
+    @transaction.atomic
+    def update_stock(product_id, movement_type, quantity, reference ="", note="",):
+        product = (Product.objects.select_for_update().get(id=product_id))
+
+        if movement_type in StockService.INCREASE_MOVEMENTS:
+            product.quantity += quantity
+        elif movement_type in StockService.DECREASE_MOVEMENT:
+            if product.quantity < quantity:
+                raise ValueError("Insufficient stock.")
+            product.quantity -= quantity
+        else:
+            raise ValueError("unsuppoted stock movement type.")
+
+        product.save(update_fields=["quantity", "updated_at",])
+        movement = StockMovement.objects.create(
+            product=product,
+            Movement_Type=movement_type,
+            quantity=quantity,
+            reference=reference,
+            note=note,
+        )
+        return product, movement
