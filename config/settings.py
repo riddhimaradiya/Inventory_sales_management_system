@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'orders',
     'campaigns',
     'payments',
+    'notifications',
     'common',
 ]
 
@@ -155,3 +156,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PAGINATION_CLASS":"common.pagination.StandardPagination",
     "PAGE_SIZE" : 10,
 }
+
+TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
+TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
+TWILIO_WHATSAPP_NUMBER = config("TWILIO_WHATSAPP_NUMBER")
