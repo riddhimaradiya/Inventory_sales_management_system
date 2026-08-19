@@ -1,7 +1,7 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .services import TwilioNotificationService
+from .services import TwilioWhatsAppService
 
 class TestWhatsappView(APIView):
     def post(self, request):
@@ -16,7 +16,7 @@ class TestWhatsappView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
         try:
-            service = (TwilioNotificationService())
+            service = TwilioWhatsAppService()
             message_sid = (
                 service.send_whatsapp(mobile_number, message)
             )

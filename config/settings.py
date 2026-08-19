@@ -136,7 +136,12 @@ STATIC_URL = 'static/'
 
 MAILERS = {
     'default': {
-        'BACKEND': 'django.core.mail.backends.console.EmailBackend',
+        'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
+        'HOST': config("EMAIL_HOST"),
+        'PORT': config("EMAIL_PORT", cast=int),
+        'USE_TLS': config("EMAIL_USE_TLS", cast=bool),
+        'USERNAME': config("EMAIL_HOST_USER"),
+        'PASSWORD': config("EMAIL_HOST_PASSWORD"),
     },
 }
 
@@ -160,3 +165,8 @@ REST_FRAMEWORK = {
 TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = config("TWILIO_WHATSAPP_NUMBER")
+TWILIO_WHATSAPP_CONTENT_SID = config("TWILIO_WHATSAPP_CONTENT_SID")
+
+
+ADMIN_EMAIL = config("ADMIN_EMAIL")
+DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")

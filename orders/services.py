@@ -4,22 +4,18 @@ from customers.models import Customer
 from products.models import Product,StockMovement
 from .models import Order, OrderItem
 from payments.services import PaymentService
+from products.alert_service import ThresholdAlertService
+from notifications.order_notifications import (OrderNotificationService)
 
 class OrderService:
     @staticmethod
     @transaction.atomic
-    def create_order(customer_id, items):
-        customer = (
-            Customer.objects
-            .select_for_update()
-            .filter(id=customer_id,is_active=True)
-            .first()
-        )
-        if not customer:
-            raise ValueError("Active customer not found.")
+    def create_order(customer, items_data):
+
+#Validate and lock products
         product_ids = [
             item["product_id"]
-            for item in items
+            for item in items_data
         ]
         products = (
             Product.objects
@@ -34,76 +30,132 @@ class OrderService:
             raise ValueError(
                 "One or more products are not available."
             )
-        order=Order.objects.create(
-            customer=customer,
-            status=Order.OrderStatus.PENDING,
-            payment_status=(Order.PaymentStatus.PENDING),
-        )
-        total_amount = Decimal("0.00")
-        order_items = []
-        for item in items:
-            product = product_map[item["product_id"]]
-            quantity = item["quantity"]
+
+#Calculate order amount
+        subtotal = Decimal("0.00")
+        gst_amount = Decimal("0.00")
+        validated_items = []
+        for item_data in items_data:
+            product_id = item_data["product_id"]
+            quantity = item_data["quantity"]
+            if quantity <= 0:
+                raise ValueError(
+                    "Quantity must be greater than zero."
+                )
+
+            product = product_map[product_id]
+
+            #stock validation
             if product.quantity < quantity:
                 raise ValueError(
                     f"Insufficient stock for "
-                    f"product '{product.name}'. "
-                    f"Available: {product.quantity}, "
-                    f"Requested: {quantity}."
+                    f"{product.name}."
                 )
-            unit_price = product.price
-            product_amount = (unit_price * quantity)
-            gst_percentage = product.gst_percentage
-            gst_amount = (product_amount * gst_percentage / Decimal("100"))
-            subtotal = (product_amount + gst_amount)
-            order_items.append(
-                OrderItem(
-                    order=order,
-                    product=product,
-                    quantity=quantity,
-                    unit_price=unit_price,
-                    gst_percentage=gst_percentage,
-                    gst_amount=gst_amount,
-                    subtotal=subtotal,
-                )
-            )
-            total_amount += subtotal
+            item_subtotal = (product.price * quantity)
+            item_gst = (item_subtotal * product.gst / Decimal("100"))
+            subtotal += item_subtotal
+            gst_amount += item_gst
 
-        OrderItem.objects.bulk_create(order_items)
-        order.total_amount = total_amount
-        order.save(update_fields=["total_amount", "updated_at",])   
-        payment = PaymentService.make_payment(
-            order=order,
-            amount=total_amount,
+            validated_items.append({
+                "product": product,
+                "quantity": quantity,
+                "unit_price": product.price,
+                "gst": product.gst,
+                "item_subtotal": item_subtotal,
+                "item_gst": item_gst,
+            })
+
+        total_amount = (
+            subtotal + gst_amount
         )
-        if payment.status == (payment.PaymentStatus.FAILED):
+
+#Create Order
+        order = Order.objects.create(
+            customer=customer,
+            subtotal=subtotal,
+            gst_amount=gst_amount,
+            total_amount=total_amount,
+            status=Order.OrderStatus.PENDING,
+            payment_status=(
+                Order.PaymentStatus.PENDING
+            ),
+        )
+
+#Create Order Items
+        for item in validated_items:
+            OrderItem.objects.create(
+                order=order,
+                product=item["product"],
+                quantity=item["quantity"],
+                unit_price=item["unit_price"],
+                gst=item["gst"],
+            )
+#Payment
+        payment_success = (
+            PaymentService.make_payment(
+                order=order,
+                amount=total_amount,
+            )
+        )
+
+#Payment Failed
+        if not payment_success:
             order.status = (Order.OrderStatus.CANCELLED)
             order.payment_status = (Order.PaymentStatus.FAILED)
             order.save(
-                update_fields = ["status", "payment_status", "updated_at", ]
+                update_fields=["status","payment_status","updated_at",]
             )
             return order
 
-        #Payment successful.
-        #Stock deduction happens below.
-        for item in order_items:
-            product = product_map[item.product_id]
-            old_quantity = product.quantity
-            product.quantity = (product.quantity - item.quantity)
+#payment Successful
+        threshold_product = []
+        for item in validated_items:
+            product = item["product"]
+            quantity = item["quantity"]
+            previous_quantity = (product.quantity)
+            product.quantity = (product.quantity - quantity)
             product.save(
-                update_fields=["quantity", "updated_at",]
+                update_fields=["quantity","updated_at",]
             )
 
+#stock movement
             StockMovement.objects.create(
                 product=product,
-                Movement_Type=StockMovement.MovementType.SALE,
-                quantity=item.quantity,
-                reference=order.order_number,
-                note=f"Sale for order {order.order_number}",
+                movement_type=(StockMovement.MovementType.SALE),
+                quantity=quantity,
+                previous_quantity=(previous_quantity),
+                new_quantity=(product.quantity),
+                reference=(order.order_number),
             )
-            order.status = (Order.OrderStatus.CONFIRMED)
-            order.payment_status = (Order.PaymentStatus.SUCCESS)
-            order.save(
-                update_fields=["status", "payment_status", "updated_at",]
+
+#Threshold check
+            if(product.quantity <= product.threshold):
+                threshold_product.append(product)
+
+#Update Order Status
+        order.status = (Order.OrderStatus.CONFIRMED)
+        order.payment_status = (Order.PaymentStatus.SUCCESS)
+        order.save(
+            update_fields=["status","payment_status","updated_at",]
+        )
+
+#Customer Whatsapp Norification
+        transaction.on_commit(
+            lambda:(
+                OrderNotificationService.send_order_confirmation(order),
+            ),
+        robust=True
+        )
+
+#Admin Low Stock Alert
+        for product in threshold_product:
+            transaction.on_commit(
+                lambda product=product: (
+                    ThresholdAlertService
+                    .send_threshold_alert(order,product)
+                ),
+                robust=True
             )
-            return order
+
+#Return Order
+        return order
