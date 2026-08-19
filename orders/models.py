@@ -16,9 +16,9 @@ class Order(models.Model):
         FAILED = "FAILED", "Failed"
 
     order_number = models.CharField(max_length=30,unique=True,editable=False)
-    Customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="orders")
+    customer = models.ForeignKey(Customer, on_delete=models.PROTECT, related_name="orders")
     status = models.CharField(max_length=20, choices=OrderStatus.choices,default=OrderStatus.PENDING)
-    payment_Status = models.CharField(max_length=20,choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
+    payment_status = models.CharField(max_length=20,choices=PaymentStatus.choices, default=PaymentStatus.PENDING)
     total_amount = models.DecimalField(max_digits=12,decimal_places=2,default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

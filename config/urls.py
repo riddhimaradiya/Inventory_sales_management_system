@@ -21,5 +21,5 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/products/',include("products.urls")),
     path("api/customers/",include("customers.urls")),
-    path("api/order/",include("orders.urls")),
+    path("api/orders/",include("orders.urls")),
 ]
