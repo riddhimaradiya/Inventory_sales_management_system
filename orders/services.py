@@ -4,8 +4,10 @@ from customers.models import Customer
 from products.models import Product,StockMovement
 from .models import Order, OrderItem
 from payments.services import PaymentService
+from payments.models import Payment
 from products.alert_service import ThresholdAlertService
 from notifications.order_notifications import (OrderNotificationService)
+from campaigns.services import CampaignSerive
 
 class OrderService:
     @staticmethod
@@ -54,7 +56,13 @@ class OrderService:
                     f"Insufficient stock for "
                     f"{product.name}."
                 )
-            item_subtotal = (product.price * quantity)
+
+            #apply active sale campaign discount, if any
+            unit_price, applied_campaign = (
+                CampaignSerive.get_best_discounted_price(product)
+            )
+            
+            item_subtotal = (unit_price * quantity)
             item_gst = (
                 item_subtotal * product.gst_percentage / Decimal("100")
             )
@@ -68,6 +76,7 @@ class OrderService:
                 "gst_percentage": product.gst_percentage,
                 "item_subtotal": item_subtotal,
                 "item_gst": item_gst,
+                "campaign": applied_campaign,
             })
 
         total_amount = (

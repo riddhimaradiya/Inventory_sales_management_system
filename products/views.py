@@ -20,7 +20,7 @@ class ProductListCreateView(generics.ListCreateAPIView):
     filterset_class = ProductFilter
     search_fields = ["name", "sku", "description",]
     ordering_fields = ["name", "price", "quantity", "created_at",]
-    ordering = ["-created_at"]
+    ordering = ["created_at"]
 
     def create(self, request, *args, **kwargs):
         is_bulk = isinstance(request.data, list)

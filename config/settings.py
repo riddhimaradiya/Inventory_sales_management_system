@@ -176,10 +176,10 @@ CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = TIME_ZONE
 
 
-# Celery Beat schedule - runs the daily stock report every day at 3:00 PM.
+# Celery Beat schedule - runs the daily stock report every day at 8:00 AM.
 CELERY_BEAT_SCHEDULE = {
     "send-daily-stock-report": {
         "task": "products.tasks.send_daily_stock_report_task",
-        "schedule": crontab(hour=15, minute=0),
+        "schedule": crontab(hour=8, minute=0),
     },
 }
