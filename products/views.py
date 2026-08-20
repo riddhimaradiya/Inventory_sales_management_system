@@ -6,8 +6,8 @@ from .services import ProductService, StockService
 from .models import Product, StockMovement
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter, SearchFilter
-from django.shortcuts import get_list_or_404
 from rest_framework.exceptions import ValidationError
+from django.db import transaction
 
 class ProductListCreateView(generics.ListCreateAPIView):
     queryset = Product.objects.all()
@@ -23,13 +23,22 @@ class ProductListCreateView(generics.ListCreateAPIView):
     ordering = ["-created_at"]
 
     def create(self, request, *args, **kwargs):
-        serializer = self.get_serializer(data = request.data)
+        is_bulk = isinstance(request.data, list)
+        serializer = self.get_serializer(data = request.data, many=is_bulk)
         serializer.is_valid(raise_exception = True)
-        product = ProductService.create_product(serializer.validated_data)
-        response_serializer = self.get_serializer(product)
+        if is_bulk:
+            with transaction.atomic():
+                products = [
+                    ProductService.create_product(item)
+                    for item in serializer.validated_data
+                ]
+            response_serializer = self.get_serializer(products, many=True)
+        else:
+            product = ProductService.create_product(serializer.validated_data)
+            response_serializer = self.get_serializer(product)
         return Response(response_serializer.data,status=status.HTTP_201_CREATED)
     
-class ProductDetailView(generics.RetrieveAPIView):
+class ProductDetailView(generics.RetrieveUpdateAPIView):
     queryset = Product.objects.all()
     serializer_class = ProductSerializer
     lookup_field = "pk"
@@ -56,13 +65,20 @@ class ProductStockUpdateView(generics.GenericAPIView):
         except ValueError as exc:
             raise ValidationError({"detail": str(exc)})
         response_serializer = ProductSerializer(updated_product)
-        movement_serializer = StockMovementSerializer(movement)
-
         return Response(
             {
                 "message": "Stock updated successfully.",
                 "product": response_serializer.data,
-                "movement": movement_serializer.data,
+                "movement": {
+                    "id": movement.id,
+                    "movement_type": (
+                        movement.Movement_Type
+                    ),
+                    "quantity": movement.quantity,
+                    "reference": movement.reference,
+                    "note": movement.note,
+                    "created_at": movement.created_at,
+                }
             },
             status=status.HTTP_200_OK
         )

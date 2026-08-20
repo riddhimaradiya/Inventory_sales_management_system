@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.1/ref/settings/
 
 from pathlib import Path
 from decouple import config
+from celery.schedules import crontab
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -118,7 +119,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = config("TIME_ZONE", default="Asia/Kolkata")
 
 USE_I18N = True
 
@@ -153,6 +154,8 @@ TWILIO_WHATSAPP_NUMBER = config("TWILIO_WHATSAPP_NUMBER")
 # TWILIO_WHATSAPP_CONTENT_SID = config("TWILIO_WHATSAPP_CONTENT_SID")
 
 
+#  Email
+# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
 ADMIN_EMAIL = config("ADMIN_EMAIL")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -161,3 +164,22 @@ EMAIL_PORT = config("EMAIL_PORT", cast=int)
 EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
 EMAIL_HOST_USER = config("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
+
+# Celery
+# https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html
+
+CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+
+
+# Celery Beat schedule - runs the daily stock report every day at 3:00 PM.
+CELERY_BEAT_SCHEDULE = {
+    "send-daily-stock-report": {
+        "task": "products.tasks.send_daily_stock_report_task",
+        "schedule": crontab(hour=15, minute=0),
+    },
+}
