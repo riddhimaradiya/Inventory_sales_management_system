@@ -10,7 +10,10 @@ from notifications.order_notifications import (OrderNotificationService)
 class OrderService:
     @staticmethod
     @transaction.atomic
-    def create_order(customer, items_data):
+    def create_order(customer_id, items):
+
+        customer = Customer.objects.get(id=customer_id, is_active=True)
+        items_data = items
 
 #Validate and lock products
         product_ids = [
@@ -52,7 +55,9 @@ class OrderService:
                     f"{product.name}."
                 )
             item_subtotal = (product.price * quantity)
-            item_gst = (item_subtotal * product.gst / Decimal("100"))
+            item_gst = (
+                item_subtotal * product.gst_percentage / Decimal("100")
+            )
             subtotal += item_subtotal
             gst_amount += item_gst
 
@@ -60,7 +65,7 @@ class OrderService:
                 "product": product,
                 "quantity": quantity,
                 "unit_price": product.price,
-                "gst": product.gst,
+                "gst_percentage": product.gst_percentage,
                 "item_subtotal": item_subtotal,
                 "item_gst": item_gst,
             })
@@ -72,8 +77,6 @@ class OrderService:
 #Create Order
         order = Order.objects.create(
             customer=customer,
-            subtotal=subtotal,
-            gst_amount=gst_amount,
             total_amount=total_amount,
             status=Order.OrderStatus.PENDING,
             payment_status=(
@@ -88,22 +91,28 @@ class OrderService:
                 product=item["product"],
                 quantity=item["quantity"],
                 unit_price=item["unit_price"],
-                gst=item["gst"],
+                gst_percentage=item["gst_percentage"],
+                gst_amount=item["item_gst"],
+                subtotal=item["item_subtotal"],
             )
 #Payment
-        payment_success = (
-            PaymentService.make_payment(
-                order=order,
-                amount=total_amount,
-            )
+        payment = PaymentService.make_payment(
+            order=order,
+            amount=total_amount,
         )
 
 #Payment Failed
-        if not payment_success:
+        if payment.status != payment.PaymentStatus.SUCCESS:
             order.status = (Order.OrderStatus.CANCELLED)
             order.payment_status = (Order.PaymentStatus.FAILED)
             order.save(
                 update_fields=["status","payment_status","updated_at",]
+            )
+            transaction.on_commit(
+                lambda: (
+                    OrderNotificationService.send_payment_failed(order, validated_items) 
+                ),
+                robust=True
             )
             return order
 
@@ -112,7 +121,6 @@ class OrderService:
         for item in validated_items:
             product = item["product"]
             quantity = item["quantity"]
-            previous_quantity = (product.quantity)
             product.quantity = (product.quantity - quantity)
             product.save(
                 update_fields=["quantity","updated_at",]
@@ -121,15 +129,13 @@ class OrderService:
 #stock movement
             StockMovement.objects.create(
                 product=product,
-                movement_type=(StockMovement.MovementType.SALE),
+                Movement_Type=(StockMovement.MovementType.SALE),
                 quantity=quantity,
-                previous_quantity=(previous_quantity),
-                new_quantity=(product.quantity),
                 reference=(order.order_number),
             )
 
 #Threshold check
-            if(product.quantity <= product.threshold):
+            if(product.quantity <= product.threshold_quantity):
                 threshold_product.append(product)
 
 #Update Order Status

@@ -10,7 +10,7 @@ class ThresholdAlertService:
         notification_log = (
             NotificationLog.objects.create(
                 notification_type=(NotificationLog.NotificationType.LOW_STOCK_ALERT),
-                channel=(NotificationLog.channel.EMAIL),
+                channel=(NotificationLog.Channel.EMAIL),
                 recipient=settings.ADMIN_EMAIL,
                 reference_id=(order.order_number),
                 status = (NotificationLog.Status.PENDING),
@@ -19,18 +19,18 @@ class ThresholdAlertService:
         try:
             csv_content = (OrderCSVReportService.generate_order_csv(order))
             subject = (                
-                f"Low Stock Alert - "
-                f"{product.name}"
+                f"⚠️ Low Stock Alert - "
+                f"{product.name} ({product.sku})"
             )
             body = (
-                f"Low stock alert.\n\n"
-                f"Product: {product.name}\n"
-                f"Current Stock: "
-                f"{product.quantity}\n"
-                f"Threshold: "
-                f"{product.threshold}\n"
-                f"Order: "
-                f"{order.order_number}\n"
+                f"Hi Admin,\n\n"
+                f"The stock for the following product has fallen at or below "
+                f"its restock threshold after order {order.order_number}.\n\n"
+                f"Product: {product.name} ({product.sku})\n"
+                f"Current Stock: {product.quantity}\n"
+                f"Threshold: {product.threshold_quantity}\n\n"
+                f"Please restock this product as soon as possible.\n\n"
+                f"A CSV report of the triggering order is attached for reference."
             )
             email = EmailMessage(
                 subject=subject,

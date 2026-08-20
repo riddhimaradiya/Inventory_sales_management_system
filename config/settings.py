@@ -130,21 +130,6 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-
-# Email
-# https://docs.djangoproject.com/en/6.1/topics/email/#topic-email-configuration
-
-MAILERS = {
-    'default': {
-        'BACKEND': 'django.core.mail.backends.smtp.EmailBackend',
-        'HOST': config("EMAIL_HOST"),
-        'PORT': config("EMAIL_PORT", cast=int),
-        'USE_TLS': config("EMAIL_USE_TLS", cast=bool),
-        'USERNAME': config("EMAIL_HOST_USER"),
-        'PASSWORD': config("EMAIL_HOST_PASSWORD"),
-    },
-}
-
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": [
         "rest_framework.renderers.JSONRenderer",
@@ -165,8 +150,14 @@ REST_FRAMEWORK = {
 TWILIO_ACCOUNT_SID = config("TWILIO_ACCOUNT_SID")
 TWILIO_AUTH_TOKEN = config("TWILIO_AUTH_TOKEN")
 TWILIO_WHATSAPP_NUMBER = config("TWILIO_WHATSAPP_NUMBER")
-TWILIO_WHATSAPP_CONTENT_SID = config("TWILIO_WHATSAPP_CONTENT_SID")
+# TWILIO_WHATSAPP_CONTENT_SID = config("TWILIO_WHATSAPP_CONTENT_SID")
 
 
 ADMIN_EMAIL = config("ADMIN_EMAIL")
 DEFAULT_FROM_EMAIL = config("DEFAULT_FROM_EMAIL")
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = config("EMAIL_HOST")
+EMAIL_PORT = config("EMAIL_PORT", cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER")
+EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")

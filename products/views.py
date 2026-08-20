@@ -56,21 +56,13 @@ class ProductStockUpdateView(generics.GenericAPIView):
         except ValueError as exc:
             raise ValidationError({"detail": str(exc)})
         response_serializer = ProductSerializer(updated_product)
+        movement_serializer = StockMovementSerializer(movement)
 
         return Response(
             {
                 "message": "Stock updated successfully.",
                 "product": response_serializer.data,
-                "movement": {
-                    "id": movement.id,
-                    "movement_type": (
-                        movement.Movement_Type
-                    ),
-                    "quantity": movement.quantity,
-                    "reference": movement.reference,
-                    "note": movement.note,
-                    "created_at": movement.created_at,
-                }
+                "movement": movement_serializer.data,
             },
             status=status.HTTP_200_OK
         )

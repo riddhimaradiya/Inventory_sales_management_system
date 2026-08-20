@@ -35,7 +35,7 @@ class OrderCreateSerializer(serializers.Serializer):
             raise serializers.ValidationError(
                 {
                     "product_id": (
-                        f"Product(s) not found or "
+                        f"Product not found or "
                         f"inactive: "
                         f"{sorted(missing_ids)}"
                     )
