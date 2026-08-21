@@ -1,7 +1,7 @@
 from django.utils import timezone
 from .models import Campaign
 
-class CampaignSerive:
+class CampaignService:
 
     @staticmethod
     def create_campaign(validated_data):
@@ -24,7 +24,7 @@ class CampaignSerive:
     def get_best_discounted_price(product):
         now = timezone.now()
         live_campaigns = product.campaigns.filter(
-            is_active = True,
+            is_active=True,
             start_date__lte=now,
             end_date__gte=now,
         )
@@ -36,5 +36,5 @@ class CampaignSerive:
             if candidate_price < best_price:
                 best_price = candidate_price
                 best_campaign = campaign
- 
+
         return best_price, best_campaign

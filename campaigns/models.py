@@ -9,6 +9,7 @@ class Campaign(models.Model):
         FLAT = "FLAT", "FLAT Amount"
 
     name = models.CharField(max_length=150)
+    description = models.TextField(blank=True, null=True)
     discount_type = models.CharField(max_length=20, choices=DiscountType.choices, default=DiscountType.PERCENTAGE,)
     discount_value = models.DecimalField(max_digits=10, decimal_places=2, validators=[MinValueValidator(0)],)
     products = models.ManyToManyField(Product, related_name="campaigns",)

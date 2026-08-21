@@ -88,6 +88,8 @@ class StockUpdateSerializer(serializers.Serializer):
         return attrs
 
 class StockMovementSerializer(serializers.ModelSerializer):
+    movement_type = serializers.CharField(source="Movement_Type", read_only=True)
+
     class Meta:
         model = StockMovement
         fields = ["id", "product", "movement_type", "quantity", "reference", "note", "created_at"]

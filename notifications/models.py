@@ -5,6 +5,7 @@ class NotificationLog(models.Model):
         ORDER_CONFIRMATION = ("ORDER_CONFIRMATION", "Order Confirmation")
         LOW_STOCK_ALERT = ("LOW_STOCK_ALERT","Low Stock Alert")
         DAILY_STOCK_REPORT = ("DAILY_STOCK_REPORT", "Daily Stock Report")
+        SALE_CAMPAIGN = ("SALE_CAMPAIGN", "Sale Campaign")
 
     class Channel(models.TextChoices):
         WHATSAPP = "WHATSAPP", "WhatsApp"

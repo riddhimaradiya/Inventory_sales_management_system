@@ -4,17 +4,31 @@ from .models import Campaign
 
 class CampaignSerializer(serializers.ModelSerializer):
     product_ids = serializers.PrimaryKeyRelatedField(
-        source = "products",
-        queryset = Product.objects.filter(is_active=True),
-        many = True,
-        write_only =True,
+        source="products",
+        queryset=Product.objects.filter(is_active=True),
+        many=True,
+        write_only=True,
     )
     products = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        Model = Campaign
-        fields = ["id", "name", "description", "discount_type", "discount_value", "product_ids", "products", "start_date", "end_date", "is_active", "broadcast_sent", "created_at", "updated_at",]
-        read_only_fields = ["id", "broadcast_sent", "created_at", "updated_at",]
+        model = Campaign
+        fields = [
+            "id",
+            "name",
+            "description",
+            "discount_type",
+            "discount_value",
+            "product_ids",
+            "products",
+            "start_date",
+            "end_date",
+            "is_active",
+            "broadcast_sent",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = ["id", "broadcast_sent", "created_at", "updated_at"]
 
     def get_products(self, obj):
         return [

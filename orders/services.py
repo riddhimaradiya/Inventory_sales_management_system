@@ -7,7 +7,7 @@ from payments.services import PaymentService
 from payments.models import Payment
 from products.alert_service import ThresholdAlertService
 from notifications.order_notifications import (OrderNotificationService)
-from campaigns.services import CampaignSerive
+from campaigns.services import CampaignService
 
 class OrderService:
     @staticmethod
@@ -59,7 +59,7 @@ class OrderService:
 
             #apply active sale campaign discount, if any
             unit_price, applied_campaign = (
-                CampaignSerive.get_best_discounted_price(product)
+                CampaignService.get_best_discounted_price(product)
             )
             
             item_subtotal = (unit_price * quantity)

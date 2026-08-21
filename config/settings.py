@@ -41,6 +41,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'django_filters',
+    'django_celery_results',
     'products',
     'customers',
     'orders',
@@ -168,8 +169,10 @@ EMAIL_HOST_PASSWORD = config("EMAIL_HOST_PASSWORD")
 # Celery
 # https://docs.celeryq.dev/en/stable/django/first-steps-with-django.html
 
-CELERY_BROKER_URL = config("CELERY_BROKER_URL", default="redis://localhost:6379/0")
-CELERY_RESULT_BACKEND = config("CELERY_RESULT_BACKEND", default="redis://localhost:6379/0")
+CELERY_BROKER_URL = "memory://"
+CELERY_RESULT_BACKEND = "django-db"
+CELERY_TASK_ALWAYS_EAGER = True
+CELERY_TASK_EAGER_PROPAGATES = True
 CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
